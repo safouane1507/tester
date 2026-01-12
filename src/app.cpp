@@ -1,12 +1,16 @@
 #include "app.h"
+#include "window.h"
 #include <iostream>
+#include <algorithm> // For std::min idoaddit.-.
 
 App::App() {
     // 1. Window & System Setup
-    InitWindow(SimulationConfig::SCREEN_WIDTH, SimulationConfig::SCREEN_HEIGHT, "Traffic Core Simulator");
-    SetExitKey(KEY_NULL); // Disable default ESC
-    SetTargetFPS(60);
+    GameWindow::Init(SimulationConfig::SCREEN_WIDTH, SimulationConfig::SCREEN_HEIGHT, "Traffic Core Simulator"); //.-.
+    renderTarget = LoadRenderTexture(SimulationConfig::SCREEN_WIDTH, SimulationConfig::SCREEN_HEIGHT);
+    SetTextureFilter(renderTarget.texture, TEXTURE_FILTER_BILINEAR); // Makes scaling look smooth
+    gameScreenRect = { 0.0f, 0.0f, (float)SimulationConfig::SCREEN_WIDTH, (float)-SimulationConfig::SCREEN_HEIGHT };
 
+    //endof.-.
     // Load 3D models BEFORE simulation
     modelManager.LoadModels();
     Vehicle::modelManager = &modelManager;  // Connect to vehicles
@@ -31,8 +35,9 @@ App::App() {
     showDebugNodes = true;
 }
 
-App::~App() {
-    CloseWindow();
+App::~App() { //.-.
+    UnloadRenderTexture(renderTarget); // Clean up memory
+    GameWindow::Close();
 }
 
 void App::Run() {
@@ -97,7 +102,7 @@ void App::Update() {
 }
 
 void App::Draw() {
-    BeginDrawing();
+    BeginTextureMode(renderTarget); //.-.
         ClearBackground(RAYWHITE);
 
         if (interface.IsInSimulation() || interface.GetState() == STATE_PAUSED) {
@@ -130,6 +135,31 @@ void App::Draw() {
                 interface.DrawLoadingScreen();
             }
         }
+
+    EndTextureMode();
+
+    //.-.
+    // --- Draw the texture to the real SCREEN (Scaling + Black Bars) ---
+    BeginDrawing();
+        ClearBackground(BLACK); // Fill the unused space (bars) with black
+
+        // Calculate Scale Factor (Fit width or Fit height)
+        float scale = std::min((float)GetScreenWidth() / SimulationConfig::SCREEN_WIDTH, (float)GetScreenHeight() / SimulationConfig::SCREEN_HEIGHT);
+
+        // Calculate centering offsets
+        float newWidth = SimulationConfig::SCREEN_WIDTH * scale;
+        float newHeight = SimulationConfig::SCREEN_HEIGHT * scale;
+        float offsetX = (GetScreenWidth() - newWidth) * 0.5f;
+        float offsetY = (GetScreenHeight() - newHeight) * 0.5f;
+
+        // Correct Mouse Input for the next frame
+        // This makes sure clicking a button works even if the screen is resized
+        SetMouseOffset(-offsetX, -offsetY);
+        SetMouseScale(1.0f / scale, 1.0f / scale);
+
+        // Draw the virtual screen centered
+        Rectangle destRect = { offsetX, offsetY, newWidth, newHeight };
+        DrawTexturePro(renderTarget.texture, gameScreenRect, destRect, { 0, 0 }, 0.0f, WHITE);
 
     EndDrawing();
 }

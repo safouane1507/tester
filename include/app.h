@@ -17,6 +17,12 @@ private:
     InGameMenu pauseMenu;
     ModelManager modelManager;
 
+    //Iaddthis._.
+
+    // The virtual screen buffer
+    RenderTexture2D renderTarget;
+    Rectangle gameScreenRect; // The source rectangle (1280x720)    
+
     // State Variables
     bool gameStarted;
     float loadingTimer;

@@ -79,8 +79,15 @@ void RoadGraph::DrawIdNodes(Camera3D camera) {
         if (n.type != ARC) {
 
             // Convert 3D position to 2D screen position
+            //.-.
             Vector2 screenPos = GetWorldToScreen({n.pos.x, n.pos.y + 2.5f, n.pos.z}, camera);
+            float scaleX = (float)SimulationConfig::SCREEN_WIDTH / GetScreenWidth();
+            float scaleY = (float)SimulationConfig::SCREEN_HEIGHT / GetScreenHeight();
             
+            screenPos.x *= scaleX;
+            screenPos.y *= scaleY;
+            //._. end
+
             // Only draw if the node is actually in front of the camera
             if (screenPos.x > 0 && screenPos.y > 0) {
                 DrawText(TextFormat("ID:%d", n.id), screenPos.x - 10, screenPos.y, 10, BLACK);

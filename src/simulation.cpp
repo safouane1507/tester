@@ -1,5 +1,6 @@
 #include "simulation.h"
 #include "basicmap.h"
+#include "config.h" //.-.
 #include <cmath> // Needed for fabs
 
 Simulation::Simulation() : trafficMgr(20.0f, 50.0f) {} 
@@ -31,7 +32,13 @@ void Simulation::Update(float dt, Camera3D camera) {
     // =========================================================
     //  INTERACTION: ADAPTIVE HITBOX & CLOSEST PICK
     // =========================================================
-    Ray ray = GetMouseRay(GetMousePosition(), camera);
+    //.-. ._. .-. ._. .-. ._. .-. ._.
+    Vector2 mouse = GetMousePosition();
+    Vector2 scaledMouse = mouse;
+    scaledMouse.x = mouse.x * ((float)SimulationConfig::SCREEN_WIDTH / GetScreenWidth());
+    scaledMouse.y = mouse.y * ((float)SimulationConfig::SCREEN_HEIGHT / GetScreenHeight());
+    //.-. ._. .-. ._. .-. ._. .-. ._.
+    Ray ray = GetMouseRay(scaledMouse, camera);
     
     Vehicle* hoveredVehicle = nullptr;
     float minHitDist = 9999.0f; // Track closest hit
