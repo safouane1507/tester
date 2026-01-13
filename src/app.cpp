@@ -1,5 +1,6 @@
 #include "app.h"
 #include "window.h"
+#include "camera_controller.h" //.-. camera
 #include <iostream>
 #include <algorithm> // For std::min idoaddit.-.
 
@@ -15,13 +16,18 @@ App::App() {
     modelManager.LoadModels();
     Vehicle::modelManager = &modelManager;  // Connect to vehicles
 
-    // 2. Camera Setup
+    // 2. Camera Setup ._. start
     camera = { 0 };
-    camera.position = (Vector3){ 130.0f, 100.0f, 130.0f };
+    // Start looking at the center
     camera.target = (Vector3){ 0.0f, 0.0f, 0.0f };
+    // Start high up so we see the map
+    camera.position = (Vector3){ 100.0f, 100.0f, 100.0f }; 
     camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };
     camera.fovy = 45.0f;
     camera.projection = CAMERA_PERSPECTIVE;
+
+    // Initialize the Controller
+    CameraController::Init(camera); //.-. end
 
     // 3. Module Initialization
     globalConfig = GetDefaultConfig();
@@ -84,13 +90,22 @@ void App::Update() {
         // [N] Toggle Debug Nodes
         if (IsKeyPressed(KEY_N)) showDebugNodes = !showDebugNodes;
 
-        // Camera Controls (only if not paused)
+        // Camera Controls (only if not paused) //.-.
         if (!pauseMenu.isVisible) {
-            float dt = GetFrameTime() * globalConfig.simulationSpeed;
-            if (IsKeyDown(KEY_A)) camera.position.x -= 30 * dt;
-            if (IsKeyDown(KEY_D)) camera.position.x += 30 * dt;
-            if (IsKeyDown(KEY_W)) camera.position.z -= 30 * dt;
-            if (IsKeyDown(KEY_S)) camera.position.z += 30 * dt;
+            // Define settings
+            CameraConfig config;
+            config.orbitSpeed = 2.0f;  // Speed of WASD spinning
+            config.zoomSpeed = 5.0f;   // Speed of Wheel zooming
+            config.panSpeed = 0.5f;    // Speed of Middle Click moving
+            config.minDistance = 20.0f;  // Zoom Limit (Close)
+            config.maxDistance = 400.0f; // Zoom Limit (Far)
+
+            // Limits:
+            config.minPitch = 0.05f; // Very close to ground (but not under)
+            config.maxPitch = 1.50f; // Almost 90 degrees (Top down view)
+
+            // Run the new controller
+            CameraController::Update(camera, config);
         }
 
         // Simulation Update
