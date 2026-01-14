@@ -3,6 +3,8 @@
 
 #include "roadgraph.h"
 #include "raylib.h"
+#include "draw_utils.h"
+#include "city_structures.h"
 
 // Gère le dessin de la partie visuelle (Basic Map)
 void DrawBasicMap();

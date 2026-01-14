@@ -7,6 +7,50 @@ Simulation::Simulation() : trafficMgr(20.0f, 50.0f) {}
 
 void Simulation::Init() {
     InitializeRoadNetwork(roadGraph);
+
+    // 1. SOUTH LIGHT (Node 16)
+    // Controls traffic entering the roundabout from the South
+    trafficMgr.AddController(16, { 16, 17 }); 
+    trafficMgr.ConfigureTrafficLight(
+        16,                         // ID
+        { 10.5f, 0.0f, 34.0f },     // Position (from Chaimae's basicmap.cpp)
+        0.0f,                       // Rotation (Face Z+)
+        20.0f,                       // Start Delay 20s= red35s -> green50s -> yellow53s
+        15.0f, 3.0f, 15.0f          // Timings: Green, Yellow, Red
+    );
+
+    // 2. NORTH LIGHT (Node 12)
+    // Controls traffic entering from the North
+    trafficMgr.AddController(12, { 12, 13 });
+    trafficMgr.ConfigureTrafficLight(
+        12,                         // ID
+        { -10.5f, 0.0f, -34.0f },   // Position
+        180.0f,                     // Rotation (Face Z-)
+        25.0f,                       // Start Delay 25s= red40s -> green55s -> yellow58s
+        15.0f, 3.0f, 15.0f          // Timings: Green, Yellow, Red
+    );
+
+    // 3. EAST LIGHT (Node 8)
+    // Controls traffic entering from the East
+    trafficMgr.AddController(8, { 8, 9 });
+    trafficMgr.ConfigureTrafficLight(
+        8,                          // ID
+        { 34.0f, 0.0f, -10.5f },    // Position
+        90.0f,                      // Rotation (Face X+)
+        5.0f,                       // Start Delay 5s= red20s -> green35s -> yellow38s
+        15.0f, 3.0f, 15.0f          // Timings: Green, Yellow, Red
+    );
+
+    // 4. WEST LIGHT (Node 2)
+    // Controls traffic entering from the West
+    trafficMgr.AddController(2, { 2, 3 });
+    trafficMgr.ConfigureTrafficLight(
+        2,                          // ID
+        { -34.0f, 0.0f, 10.5f },    // Position
+        270.0f,                     // Rotation (Face X-)
+        0.0f,                       // Start Delay 0= red15s -> green30s -> yellow33s
+        15.0f, 3.0f, 15.0f          // Timings: Green, Yellow, Red
+    );
 }
 
 void Simulation::ApplyConfiguration() {
@@ -30,14 +74,13 @@ void Simulation::Update(float dt, Camera3D camera) {
     spawner.Update(roadGraph, vehicles);
 
     // =========================================================
-    //  INTERACTION: ADAPTIVE HITBOX & CLOSEST PICK
+    //  INTERACTION
     // =========================================================
-    //.-. ._. .-. ._. .-. ._. .-. ._.
     Vector2 mouse = GetMousePosition();
     Vector2 scaledMouse = mouse;
     scaledMouse.x = mouse.x * ((float)SimulationConfig::SCREEN_WIDTH / GetScreenWidth());
     scaledMouse.y = mouse.y * ((float)SimulationConfig::SCREEN_HEIGHT / GetScreenHeight());
-    //.-. ._. .-. ._. .-. ._. .-. ._.
+    
     Ray ray = GetMouseRay(scaledMouse, camera);
     
     Vehicle* hoveredVehicle = nullptr;
@@ -79,14 +122,15 @@ void Simulation::Update(float dt, Camera3D camera) {
         SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
         
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-            hoveredVehicle->forceMoveTimer = 2.0f;
+            hoveredVehicle->forceMoveTimer = 2.5f;
         }
     }
 
     // =========================================================
 
     // 2. Traffic Logic
-    trafficMgr.UpdateVehicles(vehicles);
+    trafficMgr.UpdateLights(dt, roadGraph);  // Update lights before vehicles
+    trafficMgr.UpdateVehicles(vehicles, roadGraph);
     
     // 3. Physics
     for (auto &v : vehicles) {
@@ -95,8 +139,16 @@ void Simulation::Update(float dt, Camera3D camera) {
 }
 
 void Simulation::Draw3D(bool showDebugNodes) {
+    // 1. Draw the Roads
     DrawBasicMap();
+
+    // 2. Draw the Traffic Lights
+    trafficMgr.Draw(); 
+
+    // 3. Draw Debug Nodes
     if (showDebugNodes) roadGraph.DrawNodes();
+
+    // 4. Draw Vehicles
     for (auto &v : vehicles) v->draw();
 }
 

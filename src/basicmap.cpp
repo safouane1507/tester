@@ -2,7 +2,6 @@
 #include <vector>
 #include <cmath>
 #include "draw_utils.h"
-#include "city_structures.h"
 
 // ----- Constants -----
 const float ROAD_WIDTH = 18.0f;
@@ -12,8 +11,8 @@ const float TWO_LANE_WIDTH = 10.0f;
 const float ASPHALT_RADIUS = 26.0f;     
 const float ISLAND_RADIUS = 14.0f; 
 
-const float SIDEWALK_WIDTH = 4.0f;  
-const float SIDEWALK_HEIGHT = 0.2f; 
+const float SIDEWALK_WIDTH = 4.0f;
+const float SIDEWALK_HEIGHT = 0.2f;
 
 // --- Returns {firstNodeID, lastNodeID} ---
 std::pair<int, int> addArcPath(RoadGraph& graph, Vector3 center, float radius, float startAngle, float endAngle, int segments) {
@@ -404,31 +403,31 @@ void InitializeRoadNetwork(RoadGraph& graph) {
     graph.AddNode( 1, { -120.0f,   0.0f,   2.50f },     START);
 
     graph.AddNode( 2, {  -40.0f,   0.0f,   6.75f },  DECISION);  // Enter Roundabout
-    graph.AddNode( 3, { -35.75f,   0.0f,   2.50f },  DECISION);
+    graph.AddNode( 3, {  -40.0f,   0.0f,   2.50f },  DECISION);
 
     graph.AddNode( 4, {  -6.75f,   0.0f,   40.0f },  DECISION);  // Exit Roundabout
-    graph.AddNode( 5, {  -2.50f,   0.0f,  35.75f },  DECISION);
+    graph.AddNode( 5, {  -2.50f,   0.0f,   40.0f },  DECISION);
 
     graph.AddNode( 6, {  -6.75f,   0.0f,  120.0f },  TELEPORT);
     graph.AddNode( 7, {  -2.50f,   0.0f,  120.0f },  TELEPORT);
 
     graph.AddNode( 8, {   40.0f,   0.0f,  -6.75f },  DECISION);  // Enter Roundabout
-    graph.AddNode( 9, {  35.75f,   0.0f,  -2.50f },  DECISION);
+    graph.AddNode( 9, {   40.0f,   0.0f,  -2.50f },  DECISION);
 
     graph.AddNode(10, {   6.75f,   0.0f,  -40.0f },  DECISION);  // Exit Roundabout
-    graph.AddNode(11, {   2.50f,   0.0f, -35.75f },  DECISION);
+    graph.AddNode(11, {   2.50f,   0.0f,  -40.0f },  DECISION);
     
     graph.AddNode(12, {  -6.75f,   0.0f,  -40.0f },  DECISION);  // Enter Roundabout
-    graph.AddNode(13, {  -2.50f,   0.0f, -35.75f },  DECISION);
+    graph.AddNode(13, {  -2.50f,   0.0f,  -40.0f },  DECISION);
 
     graph.AddNode(14, {  -40.0f,   0.0f,  -6.75f },  DECISION);  // Exit Roundabout
-    graph.AddNode(15, { -35.75f,   0.0f,  -2.50f },  DECISION);
+    graph.AddNode(15, {  -40.0f,   0.0f,  -2.50f },  DECISION);
 
     graph.AddNode(16, {   6.75f,   0.0f,   40.0f },  DECISION);  // Enter Roundabout
-    graph.AddNode(17, {   2.50f,   0.0f,  35.75f },  DECISION);
+    graph.AddNode(17, {   2.50f,   0.0f,   40.0f },  DECISION);
 
     graph.AddNode(18, {   40.0f,   0.0f,   6.75f },  DECISION);  // Exit Roundabout
-    graph.AddNode(19, {  35.75f,   0.0f,   2.50f },  DECISION);
+    graph.AddNode(19, {   40.0f,   0.0f,   2.50f },  DECISION);
 
     graph.AddNode(20, {  -87.5f,   0.0f,   6.75f },  DECISION);
     graph.AddNode(21, {  -82.5f,   0.0f,   6.75f },  DECISION);

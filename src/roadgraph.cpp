@@ -6,7 +6,6 @@ RoadGraph::~RoadGraph() {}
 
 void RoadGraph::AddNode(int id, Vector3 pos, NodeType type) {
     Node newNode(id, pos, type);
-    newNode.nextAvailableTime = 0.0f; // Initialisation explicite
     nodes.push_back(newNode);
 }
 

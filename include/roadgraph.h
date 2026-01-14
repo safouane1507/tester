@@ -7,16 +7,24 @@
 // Inclusion de votre logique de types
 enum NodeType { START, TELEPORT, DECISION, ARC };
 
+enum LightState {
+    LIGHT_NONE = 0,
+    LIGHT_GREEN,
+    LIGHT_YELLOW,
+    LIGHT_RED
+};
+
 struct Node {
     int id;
     Vector3 pos;
     NodeType type;
+    LightState lightState = LIGHT_NONE;
     std::vector<int> nextNodes;
     int teleportTargetId;
-    float nextAvailableTime = 0.0f; // Temps avant le prochain spawn autorisé
+
 
     Node(int id = 0, Vector3 p = {0,0,0}, NodeType t = DECISION) 
-        : id(id), pos(p), type(t), teleportTargetId(-1) {}
+        : id(id), pos(p), type(t), lightState(LIGHT_NONE), teleportTargetId(-1) {}
 };
 
 class RoadGraph {

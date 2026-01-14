@@ -1,9 +1,6 @@
 #ifndef CITY_STRUCTURES_H
 #define CITY_STRUCTURES_H
 
-// -----------------------------------------------------------------------------
-//  Includes
-// -----------------------------------------------------------------------------
 #include "raylib.h"
 #include "rlgl.h"
 #include <cmath>
@@ -890,9 +887,6 @@ inline void DrawDetailedGasStation(Vector3 position , float rotationAngle = 0.0f
     rlPopMatrix(); // On remet le monde comme avant pour ne pas affecter les autres bâtiments
 }
 
-// -----------------------------------------------------------------------------
-//  POSTE DE POLICE (POLICE STATION) AVEC PLAQUE 🚓
-// -----------------------------------------------------------------------------
 // -----------------------------------------------------------------------------
 //  POSTE DE POLICE AVEC GRANDE ENSEIGNE DE TOIT 🚓
 // -----------------------------------------------------------------------------
