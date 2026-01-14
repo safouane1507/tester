@@ -2,6 +2,7 @@
 #include <vector>
 #include <cmath>
 #include "draw_utils.h"
+#include "city_structures.h"
 
 // ----- Constants -----
 const float ROAD_WIDTH = 18.0f;
@@ -326,6 +327,72 @@ void DrawBasicMap() {
     // --- TERMINAL ROUNDABOUT EXTENSION ---
     DrawTerminalRoundabout({120, 0, 0});
     DrawCube({110.0f, -0.05f, 0}, 20.0f, 0.0f, ROAD_WIDTH, DARKGRAY);
+
+
+    // --- Buildings ---
+     DrawDetailedGasStation({29.0f, 0.0f, -60.0f});
+    DrawDetailedTownhouse({20.0f, 0.0f, 67.0f}); 
+    DrawDetailedTownhouse({34.0f, 0.0f, 67.0f}); 
+     DrawDetailedTownhouse({48.0f, 0.0f, 67.0f}); 
+      DrawDetailedTownhouse({62.0f, 0.0f, 67.0f}); 
+      DrawDetailedTownhouse({76.0f, 0.0f, 67.0f}); 
+    DrawDetailedHouse({-49.0f, 0.0f, 107.0f},180.0f);
+    DrawDetailedClinic({-104.0f, 0.0f, -33.0f} , 90.0f);
+    DrawDetailedPoliceStation({-104.0f, 0.0f, -70.0f}, 90.0f);
+    DrawDetailedMosque({-27.0f, 0.0f,-107.0f } ,0.0f );
+    DrawBigStore({130.0f, 0.0f, -80.0f} , -90.0f);
+    DrawDetailedTownhouse({20.0f, 0.0f, 99.0f},180.0f); 
+    DrawDetailedTownhouse({34.0f, 0.0f, 99.0f},180.0f); 
+     DrawDetailedTownhouse({48.0f, 0.0f, 99.0f},180.0f); 
+      DrawDetailedTownhouse({62.0f, 0.0f, 99.0f},180.0f); 
+      DrawDetailedTownhouse({76.0f, 0.0f, 99.0f},180.0f); 
+      DrawDetailedHouse({-27.0f, 0.0f, 107.0f},180.0f);
+      DrawDetailedHouse({-71.0f, 0.0f, 107.0f},180.0f);
+      DrawDetailedHouse({-107.0f, 0.0f, 70.0f},90.0f);
+       DrawDetailedHouse({-107.0f, 0.0f, 48.0f},90.0f);
+        DrawDetailedHouse({-107.0f, 0.0f, 26.0f},90.0f);
+        DrawDetailedBank({-70.0f, 0.0f, -104.0f}, 180.0f);
+      
+
+
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 }
 
