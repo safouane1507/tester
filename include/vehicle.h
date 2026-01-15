@@ -24,6 +24,9 @@ public:
     bool finished = false;
     float forceMoveTimer = 0.0f;
 
+    //.-. yielding 
+    float lateralOffset = 0.0f;
+
     // Static model manager (shared by all vehicles)
     static ModelManager* modelManager;
 
@@ -34,6 +37,9 @@ public:
     Vehicle(Vector3 pos, int initialTargetId);
 
     virtual ~Vehicle();
+
+    // NEW: Virtual method to identify emergency vehicles
+    virtual bool IsEmergency() const { return false; }
 
     // MISE À JOUR : Utilise RoadGraph au lieu de std::vector<Node>
     virtual void update(float dt, RoadGraph &graph, const std::vector<std::unique_ptr<Vehicle>>& allVehicles);
@@ -79,6 +85,17 @@ public:
     void draw() override;
 };
 
+//.-. Ambulance Class
+class Ambulance : public Vehicle {
+private:
+    float sirenTimer = 0.0f;
+public:
+    Ambulance(Vector3 pos, int targetId);
+    void update(float dt, RoadGraph &graph, const std::vector<std::unique_ptr<Vehicle>> &allVehicles) override;
+    void draw() override;
+    bool IsEmergency() const override { return true; }
+};
+
 class PoliceCar : public Vehicle {
 private:
     float sirenTimer = 0.0f;
@@ -91,6 +108,8 @@ public:
     void update(float dt, RoadGraph &graph, const std::vector<std::unique_ptr<Vehicle>> &allVehicles) override;
 
     void draw() override;
+
+    bool IsEmergency() const override { return true; }
 };
 
 class Motorcycle : public Vehicle {

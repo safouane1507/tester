@@ -117,8 +117,13 @@ void Vehicle::update(float dt, RoadGraph &graph, const std::vector<std::unique_p
 
 void Vehicle::draw() {
     float angle = atan2f(forward.x, forward.z) * RAD2DEG;
+    //.-.
+    // Calculate lateral vector (Right vector)
+    Vector3 right = { -forward.z, 0.0f, forward.x };
+    Vector3 drawPos = Vector3Add(position, Vector3Scale(right, lateralOffset));
+    //.-.
     rlPushMatrix();
-    rlTranslatef(position.x, position.y, position.z);
+    rlTranslatef(drawPos.x, drawPos.y, drawPos.z);
     rlRotatef(angle, 0, 1, 0);
     DrawCube({0,0,0}, 2.0f, 0.6f, 4.0f, color); 
     DrawCubeWires({0,0,0}, 2.0f, 0.6f, 4.0f, BLACK);
@@ -158,9 +163,12 @@ void Car::draw() {
     float angle = atan2f(forward.x, forward.z) * RAD2DEG;
 
     Model& carModel = modelManager->GetModel("Car");
+
+    Vector3 right = { -forward.z, 0.0f, forward.x };
+    Vector3 drawPos = Vector3Add(position, Vector3Scale(right, lateralOffset));
     
     rlPushMatrix();
-        rlTranslatef(position.x, position.y, position.z);
+        rlTranslatef(drawPos.x, drawPos.y, drawPos.z);
         rlRotatef(angle, 0, 1, 0);
         
         // Adjust scale and height as needed
@@ -191,6 +199,9 @@ void Bus::draw() {
     float angle = atan2f(forward.x, forward.z) * RAD2DEG;
 
     Model& busModel = modelManager->GetModel("Bus");
+
+    Vector3 right = { -forward.z, 0.0f, forward.x };
+    Vector3 drawPos = Vector3Add(position, Vector3Scale(right, lateralOffset));
     
     rlPushMatrix();
         rlTranslatef(position.x, position.y, position.z);
@@ -203,6 +214,50 @@ void Bus::draw() {
         busModel.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = color;
         
         DrawModel(busModel, (Vector3){0, 0, 0}, 1.0f, WHITE);
+    rlPopMatrix();
+}
+
+// =============================================================================
+//  AMBULANCE IMPLEMENTATION
+// =============================================================================
+Ambulance::Ambulance(Vector3 pos, int targetId) : Vehicle(pos, targetId) {
+    color = WHITE; 
+    originalColor = WHITE;
+    desiredSpeed = CONFIG::POLICE_SPEED; // Fast like police
+    speed = desiredSpeed;
+    length = 6.0f; // Slightly larger than a car
+    modelType = "Ambulance";
+}
+
+void Ambulance::update(float dt, RoadGraph &graph, const std::vector<std::unique_ptr<Vehicle>> &allVehicles) {
+    Vehicle::update(dt, graph, allVehicles);
+    sirenTimer += dt;
+    // Simple visual siren effect (flashing color)
+    if (fmod(sirenTimer, 0.5f) > 0.25f) color = RED;
+    else color = WHITE;
+}
+
+void Ambulance::draw() {
+    if (!modelManager) return;
+
+    // Use Truck model as placeholder if Ambulance doesn't exist, or specific model
+    // Assuming we might use the Truck model scaled down or just draw basic for now
+    // If you have an ambulance.glb, load it in ModelManager. 
+    // For now, we reuse the Truck model but painted White/Red
+    
+    float angle = atan2f(forward.x, forward.z) * RAD2DEG;
+    Vector3 right = { -forward.z, 0.0f, forward.x };
+    Vector3 drawPos = Vector3Add(position, Vector3Scale(right, lateralOffset));
+
+    Model& model = modelManager->GetModel("Truck"); // Reusing Truck for shape
+
+    rlPushMatrix();
+    rlTranslatef(drawPos.x, drawPos.y, drawPos.z);
+    rlRotatef(angle, 0, 1, 0);
+    rlScalef(0.8f, 0.8f, 0.8f); // Slightly smaller than the big truck
+    
+    model.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = color;
+    DrawModel(model, (Vector3){0, 0, 0}, 1.0f, WHITE);
     rlPopMatrix();
 }
 
@@ -224,6 +279,9 @@ void Truck::draw() {
     float angle = atan2f(forward.x, forward.z) * RAD2DEG;
 
     Model& truckModel = modelManager->GetModel("Truck");
+
+    Vector3 right = { -forward.z, 0.0f, forward.x };
+    Vector3 drawPos = Vector3Add(position, Vector3Scale(right, lateralOffset));
     
     rlPushMatrix();
         rlTranslatef(position.x, position.y, position.z);
@@ -262,6 +320,9 @@ void Taxi::draw() {
     float angle = atan2f(forward.x, forward.z) * RAD2DEG;
 
     Model& taxiModel = modelManager->GetModel("Taxi");
+
+    Vector3 right = { -forward.z, 0.0f, forward.x };
+    Vector3 drawPos = Vector3Add(position, Vector3Scale(right, lateralOffset));
     
     rlPushMatrix();
         rlTranslatef(position.x, position.y, position.z);
@@ -300,6 +361,9 @@ void PoliceCar::draw() {
     float angle = atan2f(forward.x, forward.z) * RAD2DEG;
 
     Model& policeModel = modelManager->GetModel("Police");
+
+    Vector3 right = { -forward.z, 0.0f, forward.x };
+    Vector3 drawPos = Vector3Add(position, Vector3Scale(right, lateralOffset));
     
     rlPushMatrix();
         rlTranslatef(position.x, position.y, position.z);
@@ -352,6 +416,9 @@ void Motorcycle::draw() {
     float angle = atan2f(forward.x, forward.z) * RAD2DEG;
 
     Model& motorcycleModel = modelManager->GetModel("Motorcycle");
+
+    Vector3 right = { -forward.z, 0.0f, forward.x };
+    Vector3 drawPos = Vector3Add(position, Vector3Scale(right, lateralOffset));
     
     rlPushMatrix();
         rlTranslatef(position.x, position.y, position.z);

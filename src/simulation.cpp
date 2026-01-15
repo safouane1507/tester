@@ -129,7 +129,7 @@ void Simulation::Update(float dt, Camera3D camera) {
     // =========================================================
 
     // 2. Traffic Logic
-    trafficMgr.UpdateLights(dt, roadGraph);  // Update lights before vehicles
+    trafficMgr.UpdateLights(dt, roadGraph, vehicles);// Update lights before vehicles
     trafficMgr.UpdateVehicles(vehicles, roadGraph);
     
     // 3. Physics

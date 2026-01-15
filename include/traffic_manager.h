@@ -23,6 +23,7 @@ struct TrafficController {
     // State
     LightState currentState;
     float timer;
+    bool isEmergencyOverride = false; // .-. ._.
     
     // Timings
     float startRedTime;// Delay before starting (or initial Red duration)
@@ -63,7 +64,7 @@ public:
     void Draw();
     
     // Update Loops
-    void UpdateLights(float dt, RoadGraph& map); 
+    void UpdateLights(float dt, RoadGraph& map, const std::vector<std::unique_ptr<Vehicle>>& vehicles); 
     void UpdateVehicles(std::vector<std::unique_ptr<Vehicle>>& vehicles, const RoadGraph& map);
 };
 

@@ -48,6 +48,7 @@ void TrafficManager::AddController(int id, std::vector<int> nodeIds) {
     ctrl.nodeIds = nodeIds;
     ctrl.currentState = LIGHT_GREEN; 
     ctrl.timer = 0.0f;
+    ctrl.isEmergencyOverride = false; // Initialize new flag
     
     // Default values (will be overwritten by ConfigureTrafficLight)
     ctrl.durationGreen = 15.0f;
@@ -139,34 +140,79 @@ void TrafficManager::Draw() {
 // =============================================================================
 //  UPDATE LIGHTS
 // =============================================================================
-void TrafficManager::UpdateLights(float dt, RoadGraph& map) {
-    for (auto& ctrl : controllers) {
-        ctrl.timer += dt;
+void TrafficManager::UpdateLights(float dt, RoadGraph& map, const std::vector<std::unique_ptr<Vehicle>>& vehicles) {
+    
+    // 1. Reset overrides first (assume normal operation)
+    for (auto& ctrl : controllers) ctrl.isEmergencyOverride = false;
 
-        switch (ctrl.currentState) {
-            case LIGHT_GREEN:
-                if (ctrl.timer >= ctrl.durationGreen) { // Uses custom timer
-                    ctrl.currentState = LIGHT_YELLOW;
-                    ctrl.timer = 0.0f;
+    // 2. Check for active emergency vehicles
+    Vehicle* emergencyVehicle = nullptr;
+    for(const auto& v : vehicles) {
+        if(v->IsEmergency() && !v->finished) {
+            emergencyVehicle = v.get();
+            break; // Found one, prioritize it
+        }
+    }
+
+    // 3. Logic loop
+    for (auto& ctrl : controllers) {
+        
+        // --- A. Emergency Logic ---
+        if (emergencyVehicle != nullptr) {
+            // Check if controller is relevant (within 60m of emergency vehicle)
+            if (GetDistance(ctrl.position, emergencyVehicle->position) < 60.0f) {
+                ctrl.isEmergencyOverride = true; 
+
+                // Determine Axis: Is the ambulance moving along Z or X?
+                // If Z component of forward is larger, it's Z-axis.
+                bool isZAxis = fabs(emergencyVehicle->forward.z) > fabs(emergencyVehicle->forward.x);
+                
+                // Determine if this specific controller manages Z or X traffic
+                // South(16) & North(12) are roughly at Z=34, Z=-34 -> Z-Controllers
+                bool ctrlIsZ = (fabs(ctrl.position.z) > 20.0f);
+
+                if (isZAxis) {
+                    // Ambulance on Z-road: Z-Controllers GREEN, X-Controllers RED
+                    if (ctrlIsZ) ctrl.currentState = LIGHT_GREEN;
+                    else ctrl.currentState = LIGHT_RED;
+                } else {
+                    // Ambulance on X-road: X-Controllers GREEN, Z-Controllers RED
+                    if (!ctrlIsZ) ctrl.currentState = LIGHT_GREEN;
+                    else ctrl.currentState = LIGHT_RED;
                 }
-                break;
-            case LIGHT_YELLOW:
-                if (ctrl.timer >= ctrl.durationYellow) {
-                    ctrl.currentState = LIGHT_RED;
-                    ctrl.timer = 0.0f;
-                    ctrl.durationRed = 15.0f; 
-                }
-                break;
-            case LIGHT_RED:
-                if (ctrl.timer >= ctrl.durationRed) {
-                    ctrl.currentState = LIGHT_GREEN;
-                    ctrl.timer = 0.0f;
-                    ctrl.durationGreen = 15.0f; 
-                }
-                break;
-            default: break;
+            }
         }
 
+        // --- B. Standard Timer Logic (Only if not overridden) ---
+        if (!ctrl.isEmergencyOverride) {
+            ctrl.timer += dt;
+
+            switch (ctrl.currentState) {
+                case LIGHT_GREEN:
+                    if (ctrl.timer >= ctrl.durationGreen) {
+                        ctrl.currentState = LIGHT_YELLOW;
+                        ctrl.timer = 0.0f;
+                    }
+                    break;
+                case LIGHT_YELLOW:
+                    if (ctrl.timer >= ctrl.durationYellow) {
+                        ctrl.currentState = LIGHT_RED;
+                        ctrl.timer = 0.0f;
+                        ctrl.durationRed = 15.0f; 
+                    }
+                    break;
+                case LIGHT_RED:
+                    if (ctrl.timer >= ctrl.durationRed) {
+                        ctrl.currentState = LIGHT_GREEN;
+                        ctrl.timer = 0.0f;
+                        ctrl.durationGreen = 15.0f; 
+                    }
+                    break;
+                default: break;
+            }
+        }
+
+        // --- C. Apply State to Nodes ---
         for (int nodeId : ctrl.nodeIds) {
             try {
                 Node& node = map.GetNode(nodeId);
@@ -182,11 +228,49 @@ void TrafficManager::UpdateLights(float dt, RoadGraph& map) {
 
 void TrafficManager::UpdateVehicles(std::vector<std::unique_ptr<Vehicle>>& vehicles, const RoadGraph& map) {
     float dt = GetFrameTime();
+
+    // 1. Identify active emergency vehicles
+    std::vector<Vehicle*> emergencyVehicles;
+    for(const auto& v : vehicles) {
+        if(v->IsEmergency() && !v->finished) {
+            emergencyVehicles.push_back(v.get());
+        }
+    }    
     
     for (size_t i = 0; i < vehicles.size(); i++) {
         Vehicle* current = vehicles[i].get();
         if (current->finished) continue;
 
+        //=======EMERGENCY.-.YIELD.-.LOGIC._.
+        float targetLateralOffset = 0.0f;
+        if (!current->IsEmergency()) {
+            for (Vehicle* ev : emergencyVehicles) {
+                float dist = GetDistance(current->position, ev->position);
+                
+                // If emergency vehicle is close (e.g., within 40m)
+                if (dist < 40.0f) {
+                    // Check if we are in front of the emergency vehicle
+                    Vector3 toMe = Vector3Subtract(current->position, ev->position);
+                    float forwardDot = Vector3DotProduct(ev->forward, toMe);
+                    
+                    if (forwardDot > 0) { // We are ahead
+                        // Determine Left or Right relative to Emergency Vehicle
+                        Vector3 evRight = { -ev->forward.z, 0, ev->forward.x };
+                        float sideDot = Vector3DotProduct(evRight, toMe);
+                        
+                        // "Left moves slightly to left, Right moves slightly to right"
+                        // If sideDot > 0 (Right), move +2.0
+                        // If sideDot < 0 (Left), move -2.0
+                        if (sideDot > 0) targetLateralOffset = 2.5f;     //Move Right 
+                        else targetLateralOffset = -2.5f;               //Move Left
+                    }
+                }
+            }
+        }
+
+        // Smoothly apply the offset
+        current->lateralOffset = Lerp(current->lateralOffset, targetLateralOffset, 5.0f * dt);
+        //===============================================
         if (current->forceMoveTimer > 0.0f) current->forceMoveTimer -= dt;
         
         float targetSpeed = current->desiredSpeed;
@@ -204,28 +288,34 @@ void TrafficManager::UpdateVehicles(std::vector<std::unique_ptr<Vehicle>>& vehic
             }
 
             if (isManagedNode) {
+                // If light is RED or YELLOW...
                 if (ctrl.currentState == LIGHT_RED || ctrl.currentState == LIGHT_YELLOW) {
-                    
-                    Vector3 nodePos = {0,0,0};
-                    bool found = false;
-                    for(const auto& n : map.GetAllNodes()) {
-                        if(n.id == current->targetNodeId) {
-                            nodePos = n.pos;
-                            found = true;
-                            break;
-                        }
-                    }
-
-                    if (found) {
-                        float distToNode = GetDistance(current->position, nodePos); // Uses restored helper
-
-                        if (distToNode < startSlowingDist) {
-                            Vector3 toNode = Vector3Subtract(nodePos, current->position);
-                            if (Vector3DotProduct(current->forward, toNode) > 0) {
-                                redLightStop = true;
+                    // ...but allow emergency vehicles to run red lights!
+                    if (current->IsEmergency()) {
+                        redLightStop = false; 
+                    }else{
+                        // Standard cars stop
+                        Vector3 nodePos = {0,0,0};
+                        bool found = false;
+                        for(const auto& n : map.GetAllNodes()) {
+                            if(n.id == current->targetNodeId) {
+                                nodePos = n.pos;
+                                found = true;
+                                break;
                             }
                         }
-                    }
+
+                        if (found) {
+                            float distToNode = GetDistance(current->position, nodePos); // Uses restored helper
+
+                            if (distToNode < startSlowingDist) {
+                                Vector3 toNode = Vector3Subtract(nodePos, current->position);
+                                if (Vector3DotProduct(current->forward, toNode) > 0) {
+                                    redLightStop = true;
+                                }
+                            }
+                        }
+                    } 
                 }
             }
         }
@@ -269,7 +359,10 @@ void TrafficManager::UpdateVehicles(std::vector<std::unique_ptr<Vehicle>>& vehic
                 // Intersection logic
                 float safeCrossingDist = combinedHalfLengths + 3.0f + (current->speed * 0.5f);
                 if (fwdDist > 0 && fwdDist < safeCrossingDist && fabs(sideDist) < 2.5f) {
-                    emergencyStop = true;
+                    // Emergency vehicles ignore intersection blockage logic (aggressive)
+                    if (!current->IsEmergency()) {
+                        emergencyStop = true;
+                    }
                 }
             }
         }
