@@ -17,16 +17,35 @@ bool TrafficManager::AreSameDirection(const Vector3& dir1, const Vector3& dir2) 
     return dotProduct > 0.7f;
 }
 
+// Check if two vehicles are in the same PHYSICAL lane (ignoring current yielding offset)
+// This prevents oscillation (yielding -> thinking you are safe -> moving back -> yielding again)
+bool IsInSamePhysicalLane(Vehicle* a, Vehicle* b) {
+    Vector3 toB = Vector3Subtract(b->position, a->position);
+    Vector3 right = { -a->forward.z, 0, a->forward.x };
+    float sideDist = Vector3DotProduct(toB, right);
+    // Standard lane width check (approx 2.5m tolerance)
+    return fabs(sideDist) < 2.5f;
+}
+
+// Standard Collision Check (Respects VISUAL yielding)
+// Used to decide if we need to brake or if we can pass
 bool TrafficManager::IsInMyLane(Vehicle* me, Vehicle* other) {
-    Vector3 toOther = Vector3Subtract(other->position, me->position);
+    // 1. Calculate effective positions with Lateral Offset
+    Vector3 meRight = { -me->forward.z, 0, me->forward.x };
+    Vector3 otherRight = { -other->forward.z, 0, other->forward.x };
+
+    Vector3 mePos = Vector3Add(me->position, Vector3Scale(meRight, me->lateralOffset));
+    Vector3 otherPos = Vector3Add(other->position, Vector3Scale(otherRight, other->lateralOffset));
+
+    Vector3 toOther = Vector3Subtract(otherPos, mePos);
 
     float forwardDist = Vector3DotProduct(toOther, me->forward);
     if (forwardDist < 0) return false; // Behind us
 
-    Vector3 right = { -me->forward.z, 0, me->forward.x };
-    float sideDist = Vector3DotProduct(toOther, right);
+    float sideDist = Vector3DotProduct(toOther, meRight);
 
-    return fabs(sideDist) < 1.8f; // Within lane width
+    // Collision width: 2.2f allows passing if gap is wide enough
+    return fabs(sideDist) < 2.2f; 
 }
 
 float TrafficManager::Lerp(float start, float end, float amount) {
@@ -42,8 +61,7 @@ TrafficManager::TrafficManager(float slowDist, float detection)
 
 void TrafficManager::AddController(int id, std::vector<int> nodeIds) {
     TrafficController ctrl;
-
-
+    
     ctrl.id = id;
     ctrl.nodeIds = nodeIds;
     ctrl.currentState = LIGHT_GREEN; 
@@ -160,25 +178,23 @@ void TrafficManager::UpdateLights(float dt, RoadGraph& map, const std::vector<st
         // --- A. Emergency Logic ---
         if (emergencyVehicle != nullptr) {
             // Check if controller is relevant (within 60m of emergency vehicle)
-            if (GetDistance(ctrl.position, emergencyVehicle->position) < 60.0f) {
-                ctrl.isEmergencyOverride = true; 
-
-                // Determine Axis: Is the ambulance moving along Z or X?
-                // If Z component of forward is larger, it's Z-axis.
+            if (GetDistance(ctrl.position, emergencyVehicle->position) < 120.0f) {
+                
+                // Determine Axis (X or Z)
                 bool isZAxis = fabs(emergencyVehicle->forward.z) > fabs(emergencyVehicle->forward.x);
                 
-                // Determine if this specific controller manages Z or X traffic
-                // South(16) & North(12) are roughly at Z=34, Z=-34 -> Z-Controllers
-                bool ctrlIsZ = (fabs(ctrl.position.z) > 20.0f);
+                // Is this controller managing Z roads?
+                bool ctrlIsZ = (fabs(ctrl.position.z) > 20.0f); // 34.0f vs 10.5f check
 
-                if (isZAxis) {
-                    // Ambulance on Z-road: Z-Controllers GREEN, X-Controllers RED
-                    if (ctrlIsZ) ctrl.currentState = LIGHT_GREEN;
-                    else ctrl.currentState = LIGHT_RED;
-                } else {
-                    // Ambulance on X-road: X-Controllers GREEN, Z-Controllers RED
-                    if (!ctrlIsZ) ctrl.currentState = LIGHT_GREEN;
-                    else ctrl.currentState = LIGHT_RED;
+                // Only override if this light controls the ambulance's path
+                if (isZAxis == ctrlIsZ) {
+                     ctrl.isEmergencyOverride = true; 
+                     ctrl.currentState = LIGHT_GREEN; // FORCE GREEN
+                } 
+                else {
+                    // Force RED for cross traffic
+                    ctrl.isEmergencyOverride = true; 
+                    ctrl.currentState = LIGHT_RED; 
                 }
             }
         }
@@ -223,7 +239,7 @@ void TrafficManager::UpdateLights(float dt, RoadGraph& map, const std::vector<st
 }
 
 // =============================================================================
-//  UPDATE VEHICLES
+//  UPDATE VEHICLES  and YIELDING Logic
 // =============================================================================
 
 void TrafficManager::UpdateVehicles(std::vector<std::unique_ptr<Vehicle>>& vehicles, const RoadGraph& map) {
@@ -243,33 +259,55 @@ void TrafficManager::UpdateVehicles(std::vector<std::unique_ptr<Vehicle>>& vehic
 
         //=======EMERGENCY.-.YIELD.-.LOGIC._.
         float targetLateralOffset = 0.0f;
+        // --- 1. NON-EMERGENCY VEHICLES: YIELD RIGHT ---
         if (!current->IsEmergency()) {
             for (Vehicle* ev : emergencyVehicles) {
-                float dist = GetDistance(current->position, ev->position);
-                
-                // If emergency vehicle is close (e.g., within 40m)
-                if (dist < 40.0f) {
-                    // Check if we are in front of the emergency vehicle
+                // Check if EV is behind us AND in the same PHYSICAL lane (ignoring yield offset)
+                if (AreSameDirection(current->forward, ev->forward) && 
+                    GetDistance(current->position, ev->position) < 80.0f) 
+                {
                     Vector3 toMe = Vector3Subtract(current->position, ev->position);
-                    float forwardDot = Vector3DotProduct(ev->forward, toMe);
-                    
-                    if (forwardDot > 0) { // We are ahead
-                        // Determine Left or Right relative to Emergency Vehicle
-                        Vector3 evRight = { -ev->forward.z, 0, ev->forward.x };
-                        float sideDot = Vector3DotProduct(evRight, toMe);
-                        
-                        // "Left moves slightly to left, Right moves slightly to right"
-                        // If sideDot > 0 (Right), move +2.0
-                        // If sideDot < 0 (Left), move -2.0
-                        if (sideDot > 0) targetLateralOffset = 2.5f;     //Move Right 
-                        else targetLateralOffset = -2.5f;               //Move Left
+                    if (Vector3DotProduct(ev->forward, toMe) > 0) { // We are ahead
+                        if (IsInSamePhysicalLane(ev, current)) {
+                             // Yield heavily to the RIGHT (3.5 units)
+                             targetLateralOffset = 3.5f;
+                        }
                     }
                 }
             }
         }
+        // --- 2. EMERGENCY VEHICLES: YIELD LEFT (IF BLOCKED) ---
+        else {
+            // Check if there is a car directly ahead of us that hasn't fully cleared yet
+            bool isBlockedAhead = false;
+            for (const auto& other : vehicles) {
+                if (other.get() == current || other->finished) continue;
+                
+                if (AreSameDirection(current->forward, other->forward) &&
+                    GetDistance(current->position, other->position) < 40.0f) 
+                {
+                    Vector3 toOther = Vector3Subtract(other->position, current->position);
+                    if (Vector3DotProduct(current->forward, toOther) > 0) { // It is ahead
+                         // Check if it's blocking our path (using current visual positions)
+                         if (IsInMyLane(current, other.get())) {
+                             isBlockedAhead = true;
+                             break;
+                         }
+                    }
+                }
+            }
+
+            if (isBlockedAhead) {
+                // If blocked (Road Full/Red Light jam), move LEFT to create a middle lane
+                targetLateralOffset = -2.0f;
+            } else {
+                // If right line is free (Cars moved out of way), pass NORMAL (Center)
+                targetLateralOffset = 0.0f;
+            }
+        }
 
         // Smoothly apply the offset
-        current->lateralOffset = Lerp(current->lateralOffset, targetLateralOffset, 5.0f * dt);
+        current->lateralOffset = Lerp(current->lateralOffset, targetLateralOffset, 3.0f * dt);
         //===============================================
         if (current->forceMoveTimer > 0.0f) current->forceMoveTimer -= dt;
         
@@ -338,29 +376,23 @@ void TrafficManager::UpdateVehicles(std::vector<std::unique_ptr<Vehicle>>& vehic
             float dist = GetDistance(current->position, other->position);
             if (dist > dynamicDetectionRange) continue;
 
-            Vector3 toOther = Vector3Subtract(other->position, current->position);
-            float fwdDist = Vector3DotProduct(toOther, current->forward);
-            float sideDist = Vector3DotProduct(toOther, { -current->forward.z, 0, current->forward.x });
-            float combinedHalfLengths = (current->length * 0.5f) + (other->length * 0.5f);
-
-            // A. Check Direction
-            if (AreSameDirection(current->forward, other->forward)) { // Uses restored helper
-                // B. Check Lane
-                if (IsInMyLane(current, other)) { // Uses restored helper
-                    float physicalGap = dist - combinedHalfLengths;
-                    if (physicalGap < closestGap) {
+            if (AreSameDirection(current->forward, other->forward)) {
+                // Use the visual IsInMyLane (respects yielding)
+                if (IsInMyLane(current, other)) {
+                    float physicalGap = dist - (current->length/2 + other->length/2);
+                    if (physicalGap < closestGap && physicalGap > -1.0f) {
                         closestGap = physicalGap;
                         closestVehicle = other;
                         followMode = true;
                     }
                 }
-            } 
-            else {
+            } else {
                 // Intersection logic
-                float safeCrossingDist = combinedHalfLengths + 3.0f + (current->speed * 0.5f);
-                if (fwdDist > 0 && fwdDist < safeCrossingDist && fabs(sideDist) < 2.5f) {
-                    // Emergency vehicles ignore intersection blockage logic (aggressive)
-                    if (!current->IsEmergency()) {
+                if (!current->IsEmergency()) {
+                    Vector3 toOther = Vector3Subtract(other->position, current->position);
+                    float fwdDist = Vector3DotProduct(toOther, current->forward);
+                    float sideDist = Vector3DotProduct(toOther, { -current->forward.z, 0, current->forward.x });
+                    if (fwdDist > 0 && fwdDist < (current->length+other->length)/2 + 3.0f && fabs(sideDist) < 2.5f) {
                         emergencyStop = true;
                     }
                 }

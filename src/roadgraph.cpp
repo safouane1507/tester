@@ -51,7 +51,7 @@ void RoadGraph::DrawNodes() {
         // ONLY draw the sphere if it is NOT an ARC node
         if (n.type != ARC) {
             Color nodeColor = (n.type == START) ? GREEN : (n.type == TELEPORT ? RED : YELLOW);
-            DrawSphere(n.pos, 1.0f, nodeColor);
+            DrawSphere({n.pos.x, n.pos.y + 0.5f, n.pos.z}, 0.4f, nodeColor);
         }
 
         // --- DESSIN DES LIGNES DE CONNEXION ---

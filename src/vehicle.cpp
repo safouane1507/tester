@@ -249,7 +249,7 @@ void Ambulance::draw() {
     Vector3 right = { -forward.z, 0.0f, forward.x };
     Vector3 drawPos = Vector3Add(position, Vector3Scale(right, lateralOffset));
 
-    Model& model = modelManager->GetModel("Truck"); // Reusing Truck for shape
+    Model& model = modelManager->GetModel("Ambulance"); // Reusing Truck for shape
 
     rlPushMatrix();
     rlTranslatef(drawPos.x, drawPos.y, drawPos.z);
@@ -353,6 +353,14 @@ PoliceCar::PoliceCar(Vector3 pos, int targetId) : Vehicle(pos, targetId) {
 void PoliceCar::update(float dt, RoadGraph &graph, const std::vector<std::unique_ptr<Vehicle>> &allVehicles) {
     Vehicle::update(dt, graph, allVehicles); 
     sirenTimer += dt;
+
+    // --- SIREN EFFECT: Flash Blue and Red ---
+    // Every 0.25 seconds, switch color
+    if (fmod(sirenTimer, 0.5f) > 0.25f) {
+        color = RED; // Flash Red
+    } else {
+        color = BLUE; // Flash Blue (Bright Blue)
+    }
 }
 
 void PoliceCar::draw() {
@@ -376,6 +384,20 @@ void PoliceCar::draw() {
         policeModel.materials[0].maps[MATERIAL_MAP_DIFFUSE].color = color;
 
         DrawModel(policeModel, (Vector3){0, 0, 0}, 1.0f, WHITE);
+    // --- DRAW ROOF LIGHTS ---
+        // We draw two small spheres on top of the car roof
+        // Adjust (0.0f, 1.8f, +/- 0.4f) depending on your car model size
+        
+        bool isRedPhase = fmod(sirenTimer, 0.5f) > 0.25f;
+        
+        // Light 1 (Red)
+        Color light1 = isRedPhase ? RED : DARKGRAY;
+        DrawSphere((Vector3){0.0f, 1.8f, 0.4f}, 0.2f, light1);
+        
+        // Light 2 (Blue)
+        Color light2 = isRedPhase ? DARKGRAY : BLUE;
+        DrawSphere((Vector3){0.0f, 1.8f, -0.4f}, 0.2f, light2);
+
     rlPopMatrix();
 }
 

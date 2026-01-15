@@ -328,68 +328,55 @@ void DrawBasicMap() {
     DrawCube({110.0f, -0.05f, 0}, 20.0f, 0.0f, ROAD_WIDTH, DARKGRAY);
 
 
-    // --- Buildings ---
-     DrawDetailedGasStation({29.0f, 0.0f, -60.0f});
+     // --- Buildings ---
+     DrawDetailedGasStation({29.0f, 0.0f, -107.0f},180.0f);
     DrawDetailedTownhouse({20.0f, 0.0f, 67.0f}); 
     DrawDetailedTownhouse({34.0f, 0.0f, 67.0f}); 
      DrawDetailedTownhouse({48.0f, 0.0f, 67.0f}); 
       DrawDetailedTownhouse({62.0f, 0.0f, 67.0f}); 
       DrawDetailedTownhouse({76.0f, 0.0f, 67.0f}); 
+      DrawDetailedTownhouse({90.0f, 0.0f, 67.0f}); 
+       DrawDetailedTownhouse({20.0f, 0.0f, 113.0f}); 
+    DrawDetailedTownhouse({34.0f, 0.0f, 113.0f}); 
+     DrawDetailedTownhouse({48.0f, 0.0f, 113.0f}); 
+      DrawDetailedTownhouse({62.0f, 0.0f, 113.0f}); 
+      DrawDetailedTownhouse({76.0f, 0.0f, 113.0f}); 
+      DrawDetailedTownhouse({90.0f, 0.0f, 113.0f}); 
     DrawDetailedHouse({-49.0f, 0.0f, 107.0f},180.0f);
-    DrawDetailedClinic({-104.0f, 0.0f, -33.0f} , 90.0f);
-    DrawDetailedPoliceStation({-104.0f, 0.0f, -70.0f}, 90.0f);
-    DrawDetailedMosque({-27.0f, 0.0f,-107.0f } ,0.0f );
+    DrawDetailedClinic({-107.0f, 0.0f, -80.0f} , 90.0f);
+    DrawDetailedPoliceStation({-70.0f, 0.0f, -104.0f}, 0.0f);
+   DrawDetailedMosque({ -58.0f, 0.0f, 30.0f }, -90.0f);
     DrawBigStore({130.0f, 0.0f, -80.0f} , -90.0f);
     DrawDetailedTownhouse({20.0f, 0.0f, 99.0f},180.0f); 
     DrawDetailedTownhouse({34.0f, 0.0f, 99.0f},180.0f); 
      DrawDetailedTownhouse({48.0f, 0.0f, 99.0f},180.0f); 
       DrawDetailedTownhouse({62.0f, 0.0f, 99.0f},180.0f); 
       DrawDetailedTownhouse({76.0f, 0.0f, 99.0f},180.0f); 
+      DrawDetailedTownhouse({90.0f, 0.0f, 99.0f},180.0f); 
+       DrawDetailedTownhouse({20.0f, 0.0f, 53.0f},180.0f); 
+    DrawDetailedTownhouse({34.0f, 0.0f, 53.0f},180.0f); 
+     DrawDetailedTownhouse({48.0f, 0.0f, 53.0f},180.0f); 
+      DrawDetailedTownhouse({62.0f, 0.0f, 53.0f},180.0f); 
+      DrawDetailedTownhouse({76.0f, 0.0f, 53.0f},180.0f); 
+      DrawDetailedTownhouse({90.0f, 0.0f, 53.0f},180.0f); 
       DrawDetailedHouse({-27.0f, 0.0f, 107.0f},180.0f);
       DrawDetailedHouse({-71.0f, 0.0f, 107.0f},180.0f);
       DrawDetailedHouse({-107.0f, 0.0f, 70.0f},90.0f);
        DrawDetailedHouse({-107.0f, 0.0f, 48.0f},90.0f);
         DrawDetailedHouse({-107.0f, 0.0f, 26.0f},90.0f);
-        DrawDetailedBank({-70.0f, 0.0f, -104.0f}, 180.0f);
+        DrawDetailedBank({-30.0f, 0.0f, -104.0f}, 180.0f);
+        DrawPlayground({ -24.0f, 0.0f, 58.0f }, 0.0f);
+        DrawSchool ({ -58.0f, 0.0f, 60.0f }, 0.0f);
+        DrawPharmacy({-67.0f, 0.0f, -62.0f} , -90.0f);
+        DrawBakery({-67.0f, 0.0f, -42.0f} , -90.0f);
+        DrawLab({-107.0f, 0.0f, -30.0f} , 90.0f);
+        DrawCafe({58.0f, 0.0f, -112.0f},0.0f);
+         DrawStadium({40.0f, 0.0f, -52.0f},-90.0f); 
+         DrawCinema({49.0f, 0.0f, 30.0f},180.0f); 
+         DrawBurgerShop({80.0f, 0.0f, 22.0f},180.0f); 
+        DrawFountain({ 0.0f, 0.0f, 0.0f }); 
+        DrawGrandHotel({-27.0f, 0.0f, -58.0f } , 180.0f);
       
-
-
-      
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
